@@ -47,9 +47,9 @@ textarea{min-height:76px;resize:vertical}
 .habit b{display:block;font-size:19px;line-height:1.1}
 .habit small{color:var(--mute);font-size:14px;display:block}
 .habit .ck{margin-left:auto;width:36px;height:36px;border-radius:50%;border:3px solid var(--line);display:grid;place-items:center;font-size:20px;font-weight:800;flex:none}
-.habit[aria-pressed="true"]{background:var(--done);border-color:var(--main)}
-.habit[aria-pressed="true"] .pl{box-shadow:inset -4px -4px 8px rgba(0,0,0,.25),0 0 18px 4px var(--pb)}
-.habit[aria-pressed="true"] .ck{background:var(--main);border-color:var(--main);color:var(--main-ink)}
+.habit[aria-pressed="true"],.habit.on{background:var(--done);border-color:var(--main)}
+.habit[aria-pressed="true"] .pl,.habit.on .pl{box-shadow:inset -4px -4px 8px rgba(0,0,0,.25),0 0 18px 4px var(--pb)}
+.habit[aria-pressed="true"] .ck,.habit.on .ck{background:var(--main);border-color:var(--main);color:var(--main-ink)}
 .bar{position:relative;height:14px;border-radius:99px;background:var(--line);margin:14px 12px 10px 0}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--h1),var(--sun));border-radius:99px;transition:width .3s;position:relative}
 .bar i::after{content:"🚀";position:absolute;right:-14px;top:-12px;font-size:24px;transform:rotate(45deg)}
@@ -155,13 +155,13 @@ details[open] summary::after{content:"▴"}
 <script>
 (function(){
 var HABITS=[
- {id:"bangun",ic:"🌅",n:"Bangun Pagi",p:"Merkurius",s:"Bangun pagi dan merapikan tempat tidur",c:["#E4DED2","#A89F91","#6E675D"]},
+ {id:"bangun",t:"Jam berapa aku bangun?",ic:"🌅",n:"Bangun Pagi",p:"Merkurius",s:"Bangun pagi dan merapikan tempat tidur",c:["#E4DED2","#A89F91","#6E675D"]},
  {id:"ibadah",ic:"🙏",n:"Beribadah",p:"Venus",s:"Beribadah sesuai agama dan kepercayaanku",c:["#FFE9B0","#E8B04B","#A8741F"]},
  {id:"olahraga",ic:"🏃",n:"Berolahraga",p:"Mars",s:"Bergerak dan berolahraga",c:["#FFA98C","#D9502C","#8E2A12"]},
  {id:"makan",ic:"🥗",n:"Makan Bergizi",p:"Jupiter",s:"Makan makanan sehat dan bergizi",c:["#FFDDB8","#D49A5E","#8C5A2B"]},
  {id:"belajar",ic:"📚",n:"Gemar Belajar",p:"Saturnus",s:"Membaca atau belajar",c:["#FFF1BE","#E3C560","#9A7E22"],ring:1},
  {id:"masyarakat",ic:"🤝",n:"Bermasyarakat",p:"Bumi",s:"Membantu dan bergaul dengan baik",c:["#A8E6FF","#2E8BDB","#1B4F8F"]},
- {id:"tidur",ic:"🌙",n:"Tidur Cepat",p:"Neptunus",s:"Tidur tepat waktu",c:["#B5CBFF","#4A6BE0","#23318F"]}
+ {id:"tidur",t:"Jam berapa aku tidur?",ic:"🌙",n:"Tidur Cepat",p:"Neptunus",s:"Tidur tepat waktu",c:["#B5CBFF","#4A6BE0","#23318F"]}
 ];
 var HARI=["Min","Sen","Sel","Rab","Kam","Jum","Sab"];
 var BULAN=["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
@@ -172,7 +172,7 @@ function save(k,v){mem[k]=v;try{localStorage.setItem("j7:"+k,JSON.stringify(v))}
 var $=function(id){return document.getElementById(id)};
 function ymd(d){var m=d.getMonth()+1,x=d.getDate();return d.getFullYear()+"-"+(m<10?"0":"")+m+"-"+(x<10?"0":"")+x}
 var today=ymd(new Date());
-var profil=load("profil",null),log=load("log",{}),refl=load("refl2",{}),cur=today;
+var profil=load("profil",null),log=load("log",{}),refl=load("refl2",{}),jam=load("jam",{}),cur=today;
 function planet(h,sz){return'<span class="pl'+(h.ring?" ring":"")+'" style="--pa:'+h.c[0]+';--pb:'+h.c[1]+';--pc:'+h.c[2]+'" aria-hidden="true">'+h.ic+'</span>'}
 
 function show(v){
@@ -198,6 +198,14 @@ function renderHarian(){
  var done=log[cur]||[],box=$("h-list");box.innerHTML="";
  HABITS.forEach(function(h){
   var on=done.indexOf(h.id)>-1;
+  if(h.t){
+   var w=document.createElement("div");w.className="habit"+(on?" on":"");
+   var tv=(jam[cur]||{})[h.id]||"";
+   w.innerHTML=planet(h)+'<span style="flex:1"><b>'+h.n+'</b><small>Planet '+h.p+'</small><label for="jam-'+h.id+'" style="margin:6px 0 2px;font-size:14px">'+h.t+'</label><input type="time" id="jam-'+h.id+'" value="'+tv+'" style="width:auto;min-width:130px"></span><span class="ck" aria-hidden="true">'+(on?"✓":"")+'</span>';
+   box.appendChild(w);
+   w.querySelector("input").onchange=function(){var j=jam[cur]||{};j[h.id]=this.value;jam[cur]=j;save("jam",jam);var d=log[cur]||[],i=d.indexOf(h.id);if(this.value&&i<0)d.push(h.id);if(!this.value&&i>-1)d.splice(i,1);log[cur]=d;save("log",log);renderHarian()};
+   return;
+  }
   var b=document.createElement("button");b.className="habit";b.setAttribute("aria-pressed",on);
   b.innerHTML=planet(h)+'<span><b>'+h.n+'</b><small>Planet '+h.p+' · '+h.s+'</small></span><span class="ck" aria-hidden="true">'+(on?"✓":"")+'</span>';
   b.onclick=function(){var d=log[cur]||[],i=d.indexOf(h.id);if(i>-1)d.splice(i,1);else d.push(h.id);log[cur]=d;save("log",log);renderHarian()};
@@ -216,7 +224,7 @@ function renderMinggu(){
  var days=[];for(var i=6;i>=0;i--){var d=new Date();d.setDate(d.getDate()-i);days.push(d)}
  var h='<tr><th scope="col">Planet</th>'+days.map(function(d){return'<th scope="col">'+HARI[d.getDay()]+'<br><small>'+d.getDate()+'</small></th>'}).join("")+"</tr>";
  HABITS.forEach(function(x){
-  h+='<tr><td>'+x.ic+' '+x.n+'</td>'+days.map(function(d){var on=(log[ymd(d)]||[]).indexOf(x.id)>-1;return'<td><span class="dot'+(on?" on":"")+'" role="img" aria-label="'+(on?"dilakukan":"belum")+'"></span></td>'}).join("")+"</tr>";
+  h+='<tr><td>'+x.ic+' '+x.n+'</td>'+days.map(function(d){var k=ymd(d),tj=(jam[k]||{})[x.id],on=(log[k]||[]).indexOf(x.id)>-1;if(x.t&&tj)return'<td><small>'+tj+'</small></td>';return'<td><span class="dot'+(on?" on":"")+'" role="img" aria-label="'+(on?"dilakukan":"belum")+'"></span></td>'}).join("")+"</tr>";
  });
  $("m-tabel").innerHTML=h;$("m-teks").classList.add("hidden");$("m-info").textContent="";
 }
@@ -271,10 +279,11 @@ $("r-salin").onclick=function(){
 };
 function nomor(){var n=load("hp","").replace(/\D/g,"");if(n.indexOf("0")===0)n="62"+n.slice(1);else if(n.indexOf("8")===0)n="62"+n;return n}
 $("g-hp").oninput=function(){save("hp",this.value)};
+function rataJam(id,ym){var a=[];Object.keys(jam).forEach(function(k){if(k.indexOf(ym)===0&&jam[k][id]){var p=jam[k][id].split(":"),m=+p[0]*60+ +p[1];if(id==="tidur"&&m<720)m+=1440;a.push(m)}});if(!a.length)return"";var m=Math.round(a.reduce(function(x,y){return x+y},0)/a.length)%1440,hh=Math.floor(m/60),mm=m%60;return" (rata-rata "+(hh<10?"0":"")+hh+":"+(mm<10?"0":"")+mm+")"}
 function rekapTeks(){
  var ym=today.slice(0,7),s=statBulan(ym);
  var t="Jurnal 7 Kebiasaan Anak Indonesia Hebat\nSD Negeri Baros Mandiri 1\n"+namaBulan(ym)+"\nNama: "+profil.nama+"\nKelas: "+profil.kelas+" | No. absen: "+profil.absen+"\nHari terisi: "+s.hari+" | Hari lengkap 7 kebiasaan: "+s.penuh+"\n";
- HABITS.forEach(function(h){t+="- "+h.n+": "+s.tot[h.id]+" hari\n"});return t;
+ HABITS.forEach(function(h){t+="- "+h.n+": "+s.tot[h.id]+" hari"+(h.t?rataJam(h.id,ym):"")+"\n"});return t;
 }
 function refTeks(){
  var ym=$("r-bulan").value,r=ambil(),t="Lembar Refleksi Orang Tua\nSD Negeri Baros Mandiri 1\n"+namaBulan(ym)+"\nNama siswa: "+profil.nama+" (Kelas "+profil.kelas+", No. absen "+profil.absen+")\nOrang tua/wali: "+(r.ortu||"-")+"\n";
@@ -289,6 +298,7 @@ function kirim(a,teks,info,cek){
   this.href="https://wa.me/"+n+"?text="+encodeURIComponent(teks());
  };
 }
+$("m-salin").onclick=function(){salin(rekapTeks(),$("m-teks"),$("m-info"),"Rekap sudah disalin. Tempel di WhatsApp guru.")};
 kirim($("m-kirim"),rekapTeks,$("m-info"));
 kirim($("r-kirim"),refTeks,$("r-info"),function(){return !!$("r-bulan").value});
 if(!profil)show("profil");else show("harian");
